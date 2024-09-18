@@ -38,6 +38,11 @@ private extension KeyedDecodingContainer {
     }
 }
 
+public struct ToBeEncoded {
+    let value: Encodable
+    let key: CodingKey
+}
+
 public extension Encoder {
     /// Encode a value for a given key, specified as a `CodingKey`.
     func encode<T: Encodable, K: CodingKey>(_ value: T, for key: K, showLogs: Bool = true) throws {
@@ -49,6 +54,10 @@ public extension Encoder {
             log("Encoding error for key: `\(key.stringValue)` with value: \(value). \(error.localizedDescription)", showLogs: showLogs)
             throw error
         }
+    }
+    
+    func encode(_ toBeEncoded: ToBeEncoded..., showLogs: Bool = true) throws {
+        try toBeEncoded.forEach { try encode($0.value, for: $0.key, showLogs: showLogs) }
     }
     
     private func log(_ message: String, showLogs: Bool) {
