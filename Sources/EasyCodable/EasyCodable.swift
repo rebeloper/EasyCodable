@@ -39,8 +39,13 @@ private extension KeyedDecodingContainer {
 }
 
 public struct ToBeEncoded {
-    let value: Encodable
-    let key: CodingKey
+    public let value: Encodable
+    public let key: CodingKey
+    
+    public init(value: Encodable, key: CodingKey) {
+        self.value = value
+        self.key = key
+    }
 }
 
 public extension Encoder {
