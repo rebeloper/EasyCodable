@@ -3,70 +3,66 @@
 
 import Foundation
 
+public enum EasyCodableLogLevel {
+    case none
+    case debug
+}
+
 private extension KeyedDecodingContainer {
     
-    func decode<T: Decodable>(_ type: T.Type, forKeys: [K], index: Int = 0, showLogs: Bool) throws -> T? {
+    func decode<T: Decodable>(_ type: T.Type, forKeys: [K], index: Int = 0, logLevel: EasyCodableLogLevel) throws -> T? {
         do {
             if index < forKeys.count - 1 {
                 let value = try self.decode(T.self, forKey: forKeys[index])
-                log("Decoded value for key: `\(forKeys[index].stringValue)`: \(value)", showLogs: showLogs)
+                log("Decoded value for key: `\(forKeys[index].stringValue)`: \(value)", logLevel: logLevel)
                 return value
             } else {
                 let value = try self.decodeIfPresent(T.self, forKey: forKeys[index])
-                log("Decoded value for key: `\(forKeys[index].stringValue)`: \(String(describing: value))", showLogs: showLogs)
+                log("Decoded value for key: `\(forKeys[index].stringValue)`: \(String(describing: value))", logLevel: logLevel)
                 return value
             }
         } catch {
             switch error._code {
             case 4864:
-                log("Decoding error for key: `\(forKeys[index].stringValue)`. \(error.localizedDescription) Using default value.", showLogs: showLogs)
+                log("Decoding error for key: `\(forKeys[index].stringValue)`. \(error.localizedDescription) Using default value.", logLevel: logLevel)
                 return nil
             case 4865:
-                log("Decoding error for key: `\(forKeys[index].stringValue)`. \(error.localizedDescription) Decoding for \(forKeys[index + 1].stringValue)` key instead.", showLogs: showLogs)
-                return try decode(type, forKeys: forKeys, index: index + 1, showLogs: showLogs)
+                log("Decoding error for key: `\(forKeys[index].stringValue)`. \(error.localizedDescription) Decoding for \(forKeys[index + 1].stringValue)` key instead.", logLevel: logLevel)
+                return try decode(type, forKeys: forKeys, index: index + 1, logLevel: logLevel)
             default:
-                log("Decoding error for key: `\(forKeys[index].stringValue)`. \(error.localizedDescription)", showLogs: showLogs)
+                log("Decoding error for key: `\(forKeys[index].stringValue)`. \(error.localizedDescription)", logLevel: logLevel)
                 throw error
             }
         }
     }
     
-    func log(_ message: String, showLogs: Bool) {
-        if showLogs {
+    func log(_ message: String, logLevel: EasyCodableLogLevel) {
+        if logLevel == .debug {
             print(message)
         }
     }
 }
 
-public struct ToBeEncoded {
-    public let value: Encodable
-    public let key: CodingKey
-    
-    public init(value: Encodable, key: CodingKey) {
-        self.value = value
-        self.key = key
-    }
-}
-
 public extension Encoder {
     /// Encode a value for a given key, specified as a `CodingKey`.
-    func encode<T: Encodable, K: CodingKey>(_ value: T, for key: K, showLogs: Bool = true) throws {
+    func encode<T: Encodable, K: CodingKey>(_ value: T, for key: K, logLevel: EasyCodableLogLevel = .none) {
         var container = self.container(keyedBy: K.self)
         do {
-            try container.encode(value, forKey: key)
-            log("Encoded for key: `\(key.stringValue)`, value: \(value)", showLogs: showLogs)
+            try encodeThrowing(value, for: key, logLevel: logLevel)
         } catch {
-            log("Encoding error for key: `\(key.stringValue)` with value: \(value). \(error.localizedDescription)", showLogs: showLogs)
-            throw error
+            log("Encoding error for key: `\(key.stringValue)` with value: \(value). \(error.localizedDescription)", logLevel: logLevel)
         }
     }
     
-    func encode(_ toBeEncoded: ToBeEncoded..., showLogs: Bool = true) throws {
-        try toBeEncoded.forEach { try encode($0.value, for: $0.key, showLogs: showLogs) }
+    /// Encode a value for a given key, specified as a `CodingKey`.
+    func encodeThrowing<T: Encodable, K: CodingKey>(_ value: T, for key: K, logLevel: EasyCodableLogLevel = .none) throws {
+        var container = self.container(keyedBy: K.self)
+        try container.encode(value, forKey: key)
+        log("Encoded for key: `\(key.stringValue)`, value: \(value)", logLevel: logLevel)
     }
     
-    private func log(_ message: String, showLogs: Bool) {
-        if showLogs {
+    private func log(_ message: String, logLevel: EasyCodableLogLevel) {
+        if logLevel == .debug {
             print(message)
         }
     }
@@ -74,13 +70,24 @@ public extension Encoder {
 
 public extension Decoder {
     /// Decode an optional value for the given key or keys, specified as a `CodingKey`s. Keys will be used as first one as latest version.
-    func decode<T: Decodable, K: CodingKey>(_ keys: K..., as type: T.Type = T.self, showLogs: Bool = false) throws -> T? {
-        try decode(keys, as: type, showLogs: showLogs)
+    func decode<T: Decodable, K: CodingKey>(_ keys: K..., fallback: T, as type: T.Type = T.self, logLevel: EasyCodableLogLevel = .none) -> T {
+        decode(keys, fallback: fallback, as: type, logLevel: logLevel)
     }
     
-    private func decode<T: Decodable, K: CodingKey>(_ keys: [K], as type: T.Type = T.self, showLogs: Bool) throws -> T? {
+    /// Decode an optional value for the given key or keys, specified as a `CodingKey`s. Keys will be used as first one as latest version.
+    func decode<T: Decodable, K: CodingKey>(_ keys: [K], fallback: T, as type: T.Type = T.self, logLevel: EasyCodableLogLevel = .none) -> T {
+        (try? decodeThrowing(keys, fallback: fallback, as: type, logLevel: logLevel)) ?? fallback
+    }
+    
+    /// Decode an optional value for the given key or keys, specified as a `CodingKey`s. Keys will be used as first one as latest version.
+    func decodeThrowing<T: Decodable, K: CodingKey>(_ keys: K..., fallback: T, as type: T.Type = T.self, logLevel: EasyCodableLogLevel = .none) throws -> T {
+        try decodeThrowing(keys, fallback: fallback, as: type, logLevel: logLevel)
+    }
+    
+    /// Decode an optional value for the given key or keys, specified as a `CodingKey`s. Keys will be used as first one as latest version.
+    func decodeThrowing<T: Decodable, K: CodingKey>(_ keys: [K], fallback: T, as type: T.Type = T.self, logLevel: EasyCodableLogLevel = .none) throws -> T {
         let container = try self.container(keyedBy: K.self)
-        return try container.decode(type, forKeys: keys, showLogs: showLogs)
+        return try container.decode(type, forKeys: keys, logLevel: logLevel) ?? fallback
     }
 }
 
