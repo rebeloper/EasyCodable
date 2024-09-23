@@ -12,6 +12,7 @@ public extension Encoder {
         var container = self.container(keyedBy: K.self)
         do {
             try container.encode(value, forKey: key)
+            log("Encoded value for key `\(key.stringValue)`: \(value)", logLevel: logLevel)
         } catch EncodingError.invalidValue(let type, let context) {
             log("Failed to encode type '\(type)' for key '\(key.stringValue)' due to invalid value – \(context.debugDescription)", logLevel: logLevel)
         } catch {
