@@ -12,11 +12,11 @@ public extension KeyedDecodingContainer {
         do {
             if index < keys.count - 1 {
                 let value: T = try self.decode(T.self, forKey: keys[index])
-                log("Decoded value for key `\(keys[index].stringValue)`: \(value)", logLevel: logLevel)
+                log("Decoded value for key '\(keys[index].stringValue)': \(value)", logLevel: logLevel)
                 return value
             } else {
                 let value = try self.decodeIfPresent(T.self, forKey: keys[index])
-                log("Decoded value for key `\(keys[index].stringValue)`: \(String(describing: value))", logLevel: logLevel)
+                log("Decoded value for key '\(keys[index].stringValue)': \(String(describing: value))", logLevel: logLevel)
                 return value
             }
         } catch DecodingError.keyNotFound(let key, let context) {
@@ -32,7 +32,7 @@ public extension KeyedDecodingContainer {
             log("Failed to decode key '\(keys[index].stringValue)' because it appears to be invalid JSON – \(context.debugDescription) Using fallback: \(String(describing: fallback))", logLevel: logLevel)
             return nil
         } catch {
-            log("Failed to decode key `\(keys[index].stringValue)`: \(error.localizedDescription) Using fallback: \(String(describing: fallback))", logLevel: logLevel)
+            log("Failed to decode key '\(keys[index].stringValue)': \(error.localizedDescription) Using fallback: \(String(describing: fallback))", logLevel: logLevel)
             return nil
         }
     }
@@ -41,7 +41,7 @@ public extension KeyedDecodingContainer {
         do {
             if index <= keys.count - 1 {
                 let value: [T] = try self.decodeArray(keys[index], logLevel: logLevel)
-                log("Decoded value for key `\(keys[index].stringValue)`: \(value)", logLevel: logLevel)
+                log("Decoded value for key '\(keys[index].stringValue)': \(value)", logLevel: logLevel)
                 return value
             } else {
                 log("Using fallback: \(String(describing: fallback))", logLevel: logLevel)
@@ -60,7 +60,7 @@ public extension KeyedDecodingContainer {
             log("Failed to decode key '\(keys[index].stringValue)' because it appears to be invalid JSON – \(context.debugDescription) Using fallback: \(String(describing: fallback))", logLevel: logLevel)
             return nil
         } catch {
-            log("Failed to decode key `\(keys[index].stringValue)`: \(error.localizedDescription) Using fallback: \(String(describing: keys))", logLevel: logLevel)
+            log("Failed to decode key '\(keys[index].stringValue)': \(error.localizedDescription) Using fallback: \(String(describing: keys))", logLevel: logLevel)
             return nil
         }
     }

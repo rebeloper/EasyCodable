@@ -10,9 +10,11 @@ import Foundation
 public extension Encoder {
     func encode<T: Encodable, K: CodingKey>(_ value: T, for key: K, logLevel: EasyCodableLogLevel = .none) {
         var container = self.container(keyedBy: K.self)
+        log("-----------------------------------", logLevel: logLevel)
+        log("Starting to encode key '\(key.stringValue)': \(value)", logLevel: logLevel)
         do {
             try container.encode(value, forKey: key)
-            log("Encoded value for key `\(key.stringValue)`: \(value)", logLevel: logLevel)
+            log("Encoded value for key '\(key.stringValue)': \(value)", logLevel: logLevel)
         } catch EncodingError.invalidValue(let type, let context) {
             log("Failed to encode type '\(type)' for key '\(key.stringValue)' due to invalid value – \(context.debugDescription)", logLevel: logLevel)
         } catch {
